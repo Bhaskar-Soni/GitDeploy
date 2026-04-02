@@ -1,6 +1,6 @@
 # GitDeploy
 
-![GitDeploy Banner](Images/screenshot.png)
+![GitDeploy Banner](Images/dashboard.png)
 
 **Deploy any public GitHub repository in one click.** Paste a URL, and GitDeploy clones it, detects the stack, provisions any required databases, installs dependencies, and runs it — all inside isolated Docker sandboxes with live-streamed logs.
 
