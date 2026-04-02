@@ -1,0 +1,43 @@
+services:
+  api:
+    image: gitdeploy-api:latest
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  worker:
+    image: gitdeploy-api:latest
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '2.0'
+
+  frontend:
+    image: gitdeploy-frontend:latest
+    restart: always
+
+  postgres:
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gitdeploy"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5

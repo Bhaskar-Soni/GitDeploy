@@ -1,0 +1,68 @@
+services:
+  api:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://gitdeploy:gitdeploy@postgres:5432/gitdeploy
+      SYNC_DATABASE_URL: postgresql://gitdeploy:gitdeploy@postgres:5432/gitdeploy
+      REDIS_URL: redis://redis:6379
+      SECRET_KEY: ${SECRET_KEY:-YLSdu_26pOrLhe9qtZrOPkiMHVJCjLqr_X-mVxWma_g=}
+      ALLOWED_ORIGINS: '["http://localhost:5173","http://localhost:8000"]'
+      GITHUB_CLONE_DIR: /tmp/gitdeploy/repos
+    volumes:
+      - gitdeploy_repos:/tmp/gitdeploy
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - postgres
+      - redis
+
+  worker:
+    build: ./backend
+    command: celery -A workers.celery_app:celery_app worker --loglevel=info --concurrency=4
+    environment:
+      DATABASE_URL: postgresql+asyncpg://gitdeploy:gitdeploy@postgres:5432/gitdeploy
+      SYNC_DATABASE_URL: postgresql://gitdeploy:gitdeploy@postgres:5432/gitdeploy
+      REDIS_URL: redis://redis:6379
+      SECRET_KEY: ${SECRET_KEY:-YLSdu_26pOrLhe9qtZrOPkiMHVJCjLqr_X-mVxWma_g=}
+      GITHUB_CLONE_DIR: /tmp/gitdeploy/repos
+    volumes:
+      - gitdeploy_repos:/tmp/gitdeploy
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - postgres
+      - redis
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      - api
+
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: gitdeploy
+      POSTGRES_PASSWORD: gitdeploy  # Development only — change in production
+      POSTGRES_DB: gitdeploy
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+
+volumes:
+  postgres_data:
+  redis_data:
+  gitdeploy_repos:
+
+networks:
+  default:
+    name: gitdeploy_default

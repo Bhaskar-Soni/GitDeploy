@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+*.egg
+.venv/
+venv/
+env/
+.tox/
+.mypy_cache/
+.pytest_cache/
+
+# Node
+node_modules/
+dist/
+build/
+.vite/
+
+# Environment
+.env
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Docker volumes
+postgres_data/
+redis_data/
+
+# Repo clones
+/tmp/gitdeploy/
+
+# OS
+Thumbs.db
+Desktop.ini

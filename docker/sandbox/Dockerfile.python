@@ -1,0 +1,6 @@
+FROM python:3.12-slim
+RUN apt-get update && apt-get install -y git make curl unzip build-essential && rm -rf /var/lib/apt/lists/*
+RUN pip install --no-cache-dir poetry
+RUN useradd -m -u 1000 sandbox
+USER sandbox
+WORKDIR /workspace

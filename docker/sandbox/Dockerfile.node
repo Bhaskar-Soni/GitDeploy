@@ -1,0 +1,4 @@
+FROM node:20-slim
+RUN apt-get update && apt-get install -y git make curl unzip bash && rm -rf /var/lib/apt/lists/*
+RUN corepack enable
+WORKDIR /workspace
