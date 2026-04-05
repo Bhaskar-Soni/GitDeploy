@@ -726,7 +726,7 @@ def _template_node(repo_path: str) -> Optional[dict]:
 
     # Express/Fastify/Koa/Hono: server apps
     if framework in ("express", "fastify", "koa", "hono"):
-        port = 3000
+        port = _detect_node_port(repo_path) or 3000
         main_file = _find_node_main(repo_path)
         lines = [
             f"FROM node:{node_ver}-slim",
@@ -744,6 +744,7 @@ def _template_node(repo_path: str) -> Optional[dict]:
 
     # Generic Node.js with start script
     if start:
+        port = _detect_node_port(repo_path) or 3000
         lines = [
             f"FROM node:{node_ver}-slim",
             "WORKDIR /app",
@@ -751,9 +752,9 @@ def _template_node(repo_path: str) -> Optional[dict]:
         _node_copy_and_install(lines)
         if build:
             lines.append(f"RUN {pm} run build")
-        lines.append("EXPOSE 3000")
+        lines.append(f"EXPOSE {port}")
         lines.append(f'CMD ["{pm}", "start"]')
-        return _make_result(lines, "web", 3000, f"{pm} start")
+        return _make_result(lines, "web", port, f"{pm} start")
 
     # Node CLI tool (no start script, no framework)
     lines = [
@@ -1069,6 +1070,57 @@ def _find_main_module(repo_path: str, framework: str) -> str:
             except OSError:
                 continue
     return "main"
+
+
+def _detect_node_port(repo_path: str) -> Optional[int]:
+    """Detect the port a Node.js app will listen on.
+
+    Checks (in order): .env.example/.env.sample for PORT=, package.json start
+    script for --port/PORT= flags, and app.js/server.js for .listen(PORT) calls.
+    Returns None if no port is found (caller should default to 3000).
+    """
+    # 1. Check .env files
+    for env_name in (".env.example", ".env.sample", ".env.development", ".env"):
+        env_path = os.path.join(repo_path, env_name)
+        if not os.path.isfile(env_path):
+            continue
+        try:
+            with open(env_path, "r", encoding="utf-8", errors="replace") as f:
+                for line in f:
+                    m = re.match(r'^PORT\s*=\s*(\d+)', line.strip())
+                    if m:
+                        return int(m.group(1))
+        except OSError:
+            continue
+
+    # 2. Check package.json start script for port hints
+    pkg_path = os.path.join(repo_path, "package.json")
+    if os.path.isfile(pkg_path):
+        try:
+            with open(pkg_path, "r", encoding="utf-8") as f:
+                pkg = json.load(f)
+            start_script = pkg.get("scripts", {}).get("start", "")
+            m = re.search(r'(?:--port|PORT=|-p)\s*(\d+)', start_script)
+            if m:
+                return int(m.group(1))
+        except (OSError, json.JSONDecodeError):
+            pass
+
+    # 3. Check main source files for .listen(PORT) calls
+    for src in ("app.js", "server.js", "index.js", "src/app.js", "src/index.js"):
+        src_path = os.path.join(repo_path, src)
+        if not os.path.isfile(src_path):
+            continue
+        try:
+            with open(src_path, "r", encoding="utf-8", errors="replace") as f:
+                content = f.read(5000)
+            m = re.search(r'\.listen\(\s*(\d{4,5})', content)
+            if m:
+                return int(m.group(1))
+        except OSError:
+            continue
+
+    return None
 
 
 def _find_node_main(repo_path: str) -> str:
