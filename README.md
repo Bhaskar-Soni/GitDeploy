@@ -45,8 +45,8 @@ Browser ──► React Frontend (Vite + Tailwind)
 - Git
 
 ```bash
-git clone <repo-url> gitdeploy
-cd gitdeploy
+git clone https://github.com/Bhaskar-Soni/GitDeploy.git
+cd GitDeploy
 cp .env.example .env  # Copy environment configuration
 docker compose up -d  # Start standard development setup
 ```
